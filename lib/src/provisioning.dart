@@ -43,8 +43,11 @@ class Provisioning {
     return transport.disconnect();
   }
 
-  Future<List<Map<String, dynamic>>> startScanWiFi() async {
-    return await scan();
+  Future<List<Map<String, dynamic>>> startScanWiFi({bool blocking = true,
+      bool passive = false,
+      int groupChannels = 5,
+      int periodMs = 0}) async {
+    return await scan(blocking: blocking, passive: passive, groupChannels: groupChannels, periodMs: periodMs);
   }
 
   Future<WiFiScanPayload> startScanResponse(Uint8List data) async {
