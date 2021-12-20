@@ -10,44 +10,37 @@ import 'dart:io';
 import 'dart:convert';
 
 class WiFiBlocSoftAP extends Bloc<WifiEvent, WifiState> {
-
   Provisioning prov;
   Logger log = Logger(printer: PrettyPrinter());
   var softApService = SoftAPService();
 
   WiFiBlocSoftAP() : super(WifiStateLoading());
 
-
   @override
   Stream<WifiState> mapEventToState(WifiEvent event) async* {
     if (event is WifiEventLoadSoftAP) {
       yield* _mapLoadToState();
-    }
-    else if (event is WifiEventStartProvisioningSoftAP) {
+    } else if (event is WifiEventStartProvisioningSoftAP) {
       yield* _mapProvisioningToState(event);
     }
   }
 
-  Stream<WifiState> _mapLoadToState() async*{
+  Stream<WifiState> _mapLoadToState() async* {
     yield WifiStateConnecting();
     try {
-      if (Platform.isIOS)
-        {
-          prov = await softApService.startProvisioning("wifi-prov.local", "INC032017");
-        }
-      else{
-          prov = await softApService.startProvisioning("192.168.4.1:80","INC032017");
-        }
-
+      if (Platform.isIOS) {
+        prov = await softApService.startProvisioning(
+            "wifi-prov.local", "INC032017");
+      } else {
+        prov = await softApService.startProvisioning(
+            "192.168.4.1:80", "INC032017");
+      }
     } catch (e) {
       log.e('Error connecting to device $e');
       yield WifiStateError('Error connecting to device');
     }
     yield WifiStateScanning();
     try {
-
-
-
       var listWifi = await prov.startScanWiFi();
       yield WifiStateLoaded(wifiList: listWifi ?? []);
       log.v('Wifi $listWifi');
@@ -56,6 +49,7 @@ class WiFiBlocSoftAP extends Bloc<WifiEvent, WifiState> {
       yield WifiStateError('Error scan WiFi network');
     }
   }
+
   Stream<WifiState> _mapProvisioningToState(
       WifiEventStartProvisioningSoftAP event) async* {
     yield WifiStateProvisioning();
@@ -73,14 +67,13 @@ class WiFiBlocSoftAP extends Bloc<WifiEvent, WifiState> {
     /*else if (connectionStatus.state == 1){
 
     }*/
-    else if (connectionStatus.state == WifiConnectionState.Disconnected){
+    else if (connectionStatus.state == WifiConnectionState.Disconnected) {
       yield WifiStateProvisioningDisconnected();
-    }
-    else if (connectionStatus.state == WifiConnectionState.ConnectionFailed){
-      if (connectionStatus.failedReason == WifiConnectFailedReason.AuthError){
+    } else if (connectionStatus.state == WifiConnectionState.ConnectionFailed) {
+      if (connectionStatus.failedReason == WifiConnectFailedReason.AuthError) {
         yield WifiStateProvisioningAuthError();
-      }
-      else if (connectionStatus.failedReason == WifiConnectFailedReason.NetworkNotFound){
+      } else if (connectionStatus.failedReason ==
+          WifiConnectFailedReason.NetworkNotFound) {
         yield WifiStateProvisioningNetworkNotFound();
       }
     }

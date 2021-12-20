@@ -135,7 +135,6 @@ class Provisioning {
   }
 
   Future<List<Map<String, dynamic>>> scan(
-
       {bool blocking = true,
       bool passive = false,
       int groupChannels = 5,
@@ -231,7 +230,8 @@ class Provisioning {
     return null;
   }
 
-  Future<Uint8List> sendReceiveCustomData(Uint8List data, {int packageSize = 256}) async {
+  Future<Uint8List> sendReceiveCustomData(Uint8List data,
+      {int packageSize = 256}) async {
     var i = data.length;
     var offset = 0;
     List<int> ret = [];
@@ -239,6 +239,26 @@ class Provisioning {
       var needToSend = data.sublist(offset, i < packageSize ? i : packageSize);
       var encrypted = await security.encrypt(needToSend);
       var newData = await transport.sendReceive('custom-data', encrypted);
+
+      if (newData.length > 0) {
+        var decrypted = await security.decrypt(newData);
+        ret += List.from(decrypted);
+      }
+      i -= packageSize;
+    }
+    return Uint8List.fromList(ret);
+  }
+
+  Future<Uint8List> sendReceiveCustomDataByEndpoint(
+      String endpoint, Uint8List data,
+      {int packageSize = 256}) async {
+    var i = data.length;
+    var offset = 0;
+    List<int> ret = [];
+    while (i > 0) {
+      var needToSend = data.sublist(offset, i < packageSize ? i : packageSize);
+      var encrypted = await security.encrypt(needToSend);
+      var newData = await transport.sendReceive(endpoint, encrypted);
 
       if (newData.length > 0) {
         var decrypted = await security.decrypt(newData);
