@@ -43,11 +43,16 @@ class Provisioning {
     return transport.disconnect();
   }
 
-  Future<List<Map<String, dynamic>>> startScanWiFi({bool blocking = true,
+  Future<List<Map<String, dynamic>>> startScanWiFi(
+      {bool blocking = true,
       bool passive = false,
       int groupChannels = 5,
       int periodMs = 0}) async {
-    return await scan(blocking: blocking, passive: passive, groupChannels: groupChannels, periodMs: periodMs);
+    return await scan(
+        blocking: blocking,
+        passive: passive,
+        groupChannels: groupChannels,
+        periodMs: periodMs);
   }
 
   Future<WiFiScanPayload> startScanResponse(Uint8List data) async {
@@ -270,5 +275,44 @@ class Provisioning {
       i -= packageSize;
     }
     return Uint8List.fromList(ret);
+  }
+
+  Future<int> getMQTTStatus() async {
+    var payload = WiFiConfigPayload();
+    payload.msg = WiFiConfigMsgType.TypeCmdGetStatus;
+
+    var cmdGetStatus = CmdGetStatus();
+    payload.cmdGetStatus = cmdGetStatus;
+
+    var reqData = await security.encrypt(payload.writeToBuffer());
+    var respData = await transport.sendReceive('mqtt-status', reqData);
+    var respRaw = await security.decrypt(respData);
+    var respPayload = WiFiConfigPayload.fromBuffer(respRaw);
+    return respPayload.respGetStatus.staState.value;
+
+    // if (respPayload.respGetStatus.staState.value == 0) {
+    //   return ConnectionStatus(
+    //       state: WifiConnectionState.Connected,
+    //       ip: respPayload.respGetStatus.connected.ip4Addr);
+    // } else if (respPayload.respGetStatus.staState.value == 1) {
+    //   return ConnectionStatus(state: WifiConnectionState.Connecting);
+    // } else if (respPayload.respGetStatus.staState.value == 2) {
+    //   return ConnectionStatus(state: WifiConnectionState.Disconnected);
+    // } else if (respPayload.respGetStatus.staState.value == 3) {
+    //   if (respPayload.respGetStatus.failReason.value == 0) {
+    //     return ConnectionStatus(
+    //       state: WifiConnectionState.ConnectionFailed,
+    //       failedReason: WifiConnectFailedReason.AuthError,
+    //     );
+    //   } else if (respPayload.respGetStatus.failReason.value == 1) {
+    //     return ConnectionStatus(
+    //       state: WifiConnectionState.ConnectionFailed,
+    //       failedReason: WifiConnectFailedReason.NetworkNotFound,
+    //     );
+    //   }
+    //   return ConnectionStatus(state: WifiConnectionState.ConnectionFailed);
+    // }
+
+    // return null;
   }
 }
